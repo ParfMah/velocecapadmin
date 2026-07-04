@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VC Admin">
+  <meta name="theme-color" content="#0D1F3C">
+  <meta name="description" content="Veloce Capital — Espace administrateur mobile">
+  <title>Veloce Capital Admin</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <link rel="icon" href="icons/icon-192.svg">
+  <link rel="stylesheet" href="css/app.css">
+
+  <!-- ── URL API : modifiez ici si besoin ── -->
+  <script>
+    window.VC_API_URL = localStorage.getItem('vc_api_url') || 'velocebackend.onrender.com/api';
+  </script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     SPLASH SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="app-splash">
+  <div class="splash-logo">
+    <div class="splash-emblem">VC</div>
+    <div class="splash-title">VELOCE <span>CAPITAL</span></div>
+    <div class="splash-subtitle">ESPACE ADMINISTRATEUR</div>
+  </div>
+  <div class="splash-spinner"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ÉCRAN DE CONNEXION
+══════════════════════════════════════════════════════ -->
+<div id="screen-login" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-emblem">VC</div>
+      <div class="login-title">Veloce Capital</div>
+      <div class="login-subtitle">Administration</div>
+    </div>
+    <form id="login-form" novalidate>
+      <div class="form-group">
+        <label for="login-email">Adresse email</label>
+        <input class="form-input" type="email" id="login-email"
+               placeholder="admin@velocecapital.eu"
+               autocomplete="email" inputmode="email" required>
+      </div>
+      <div class="form-group">
+        <label for="login-pass">Mot de passe</label>
+        <input class="form-input" type="password" id="login-pass"
+               placeholder="••••••••"
+               autocomplete="current-password" required>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="btn-login" type="submit" id="btn-login">Se connecter</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     APP SHELL (visible après authentification)
+══════════════════════════════════════════════════════ -->
+<div id="app-shell">
+
+  <!-- ── Header ──────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="header-logo">VC <span>Admin</span></span>
+    </div>
+    <h1 class="header-page-title" id="header-title">Tableau de bord</h1>
+    <div class="header-right">
+      <!-- Bouton installation PWA (caché jusqu'à disponibilité) -->
+      <button class="header-btn" id="btn-install" style="display:none;" title="Installer l'application">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button class="header-btn" title="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Vue Container ───────────────────────────────── -->
+  <div class="view-container">
+
+    <!-- ════════════════════════════════════════════════
+         VUE : TABLEAU DE BORD
+    ════════════════════════════════════════════════ -->
+    <div class="view active" id="view-dashboard">
+
+      <div id="dashboard-stats"></div>
+
+      <!-- Actions rapides -->
+      <div class="page-section">
+        <div class="section-title">Actions rapides</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button class="btn btn--navy btn--full" onclick="navigate('requests')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Demandes
+          </button>
+          <button class="btn btn--primary btn--full" onclick="navigate('chat')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Chat live
+          </button>
+        </div>
+      </div>
+
+      <!-- Demandes récentes -->
+      <div class="page-section">
+        <div class="section-title">Demandes récentes</div>
+        <div id="recent-requests"></div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         VUE : DEMANDES DE PRÊT
+    ════════════════════════════════════════════════ -->
+    <div class="view" id="view-requests">
+
+      <!-- Barre de recherche -->
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="search" id="req-search"
+                 placeholder="Nom, email, référence…" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Filtres -->
+      <div class="filter-chips">
+        <button class="chip active" data-req-filter="all">Tous</button>
+        <button class="chip" data-req-filter="new">Nouveaux</button>
+        <button class="chip" data-req-filter="in_review">En cours</button>
+        <button class="chip" data-req-filter="accepted">Acceptés</button>
+        <button class="chip" data-req-filter="rejected">Refusés</button>
+        <button class="chip" data-req-filter="on_hold">En attente</button>
+      </div>
+
+      <!-- Liste -->
+      <div class="page-section" style="padding-top:10px;">
+        <div id="requests-list"></div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         VUE : CHAT EN DIRECT
+    ════════════════════════════════════════════════ -->
+    <div class="view" id="view-chat">
+
+      <!-- Filtres chat -->
+      <div class="filter-chips">
+        <button class="chip active" data-chat-filter="all">Tous</button>
+        <button class="chip" data-chat-filter="waiting">En attente</button>
+        <button class="chip" data-chat-filter="active">Actifs</button>
+        <button class="chip" data-chat-filter="ended">Terminés</button>
+      </div>
+
+      <!-- Liste des sessions -->
+      <div id="chat-sessions-list" class="card" style="margin:12px 16px;"></div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         VUE : CONTENU & SERVICES
+    ════════════════════════════════════════════════ -->
+    <div class="view" id="view-content">
+
+      <!-- Onglets -->
+      <div class="filter-chips" style="background:white;border-bottom:1px solid var(--border);">
+        <button class="chip active" id="tab-content">Textes CMS</button>
+        <button class="chip" id="tab-services">Offres prêts</button>
+        <button class="chip" id="tab-media">Médiathèque</button>
+      </div>
+
+      <!-- Panel : Textes CMS -->
+      <div id="panel-content" style="padding-top:8px;">
+        <div class="page-section" style="padding-top:0;">
+          <div id="content-list"></div>
+        </div>
+      </div>
+
+      <!-- Panel : Services -->
+      <div id="panel-services" style="display:none;padding-top:8px;">
+        <div class="page-section" style="padding-top:0;">
+          <div id="services-list"></div>
+        </div>
+      </div>
+
+      <!-- Panel : Médiathèque -->
+      <div id="panel-media" style="display:none;">
+        <div id="media-grid-container"></div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════
+         VUE : PLUS
+    ════════════════════════════════════════════════ -->
+    <div class="view" id="view-more">
+
+      <!-- Profil admin -->
+      <div id="profile-cell"></div>
+
+      <!-- Paramètres -->
+      <div class="settings-section">
+
+        <div class="settings-title">Compte</div>
+        <div class="card">
+          <div class="settings-item" onclick="openChangePassword()">
+            <div class="settings-icon settings-icon--navy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <span class="settings-label">Modifier le mot de passe</span>
+            <span class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+          <div class="settings-item" onclick="openApiConfig()">
+            <div class="settings-icon settings-icon--gold">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M2 12h2M20 12h2M5.34 5.34L3.93 3.93M18.66 18.66l1.41 1.41M12 2v2M12 20v2"/></svg>
+            </div>
+            <span class="settings-label">URL du serveur API</span>
+            <span class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+        </div>
+
+        <div class="settings-title">Navigation</div>
+        <div class="card">
+          <div class="settings-item" onclick="navigate('requests')">
+            <div class="settings-icon settings-icon--navy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <span class="settings-label">Toutes les demandes</span>
+            <span class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+          <div class="settings-item" onclick="navigate('chat')">
+            <div class="settings-icon settings-icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <span class="settings-label">Chat en direct</span>
+            <span class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+          <div class="settings-item" onclick="navigate('content');setTimeout(()=>{ State?.contentTab !== 'media' && document.getElementById('tab-media')?.click(); },300)">
+            <div class="settings-icon settings-icon--gold">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <span class="settings-label">Médiathèque</span>
+            <span class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+        </div>
+
+        <div class="settings-title">Application</div>
+        <div class="card">
+          <div class="settings-item" id="btn-install-settings" style="display:none;" onclick="document.getElementById('btn-install')?.click()">
+            <div class="settings-icon settings-icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <span class="settings-label">Installer l'application</span>
+            <span class="settings-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+          <div class="settings-item" onclick="logout()">
+            <div class="settings-icon settings-icon--red">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
+            <span class="settings-label">Se déconnecter</span>
+            <span class="settings-arrow" style="color:var(--danger);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+        </div>
+
+        <!-- Version -->
+        <p style="text-align:center;font-size:11px;color:var(--muted);padding:20px 0 32px;">
+          Veloce Capital Admin v1.0 · PWA
+        </p>
+
+      </div>
+    </div>
+
+  </div><!-- /view-container -->
+
+  <!-- ── Bottom Navigation ────────────────────────────── -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-dashboard">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" id="nav-requests">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <span class="nav-label">Demandes</span>
+    </button>
+    <button class="nav-item" id="nav-chat">
+      <div class="nav-icon" style="position:relative;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-badge" id="nav-badge-chat" style="display:none;position:absolute;top:-4px;right:-6px;"></span>
+      </div>
+      <span class="nav-label">Chat</span>
+    </button>
+    <button class="nav-item" id="nav-content">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+      <span class="nav-label">Contenu</span>
+    </button>
+    <button class="nav-item" id="nav-more">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M2 12h2M20 12h2M5.34 5.34L3.93 3.93M18.66 18.66l1.41 1.41M12 2v2M12 20v2"/></svg>
+      </div>
+      <span class="nav-label">Plus</span>
+    </button>
+  </nav>
+
+</div><!-- /app-shell -->
+
+<!-- ════════════════════════════════════════════════════════
+     BOTTOM SHEET (tiroir modal)
+════════════════════════════════════════════════════════ -->
+<div class="sheet-overlay" id="sheet-overlay"></div>
+<div class="bottom-sheet" id="bottom-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="sheet-title"></div>
+    <button class="sheet-close" id="sheet-close-btn">✕</button>
+  </div>
+  <div class="sheet-body" id="sheet-body"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     TOASTS
+════════════════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════════════════ -->
+<!-- Socket.io pour le chat temps réel -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
