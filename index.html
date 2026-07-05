@@ -18,7 +18,7 @@
 
   <!-- ── URL API : modifiez ici si besoin ── -->
   <script>
-    window.VC_API_URL = localStorage.getItem('vc_api_url') || 'velocebackend.onrender.com/api';
+    window.VC_API_URL = localStorage.getItem('vc_api_url') || 'http://localhost:3000/api';
   </script>
 </head>
 <body>
@@ -155,16 +155,48 @@
     ════════════════════════════════════════════════ -->
     <div class="view" id="view-chat">
 
-      <!-- Filtres chat -->
-      <div class="filter-chips">
-        <button class="chip active" data-chat-filter="all">Tous</button>
-        <button class="chip" data-chat-filter="waiting">En attente</button>
-        <button class="chip" data-chat-filter="active">Actifs</button>
-        <button class="chip" data-chat-filter="ended">Terminés</button>
+      <!-- PANEL 1 : Liste des sessions -->
+      <div id="chat-list-panel">
+        <!-- Filtres chat -->
+        <div class="filter-chips">
+          <button class="chip active" data-chat-filter="all">Tous</button>
+          <button class="chip" data-chat-filter="waiting">En attente</button>
+          <button class="chip" data-chat-filter="active">Actifs</button>
+          <button class="chip" data-chat-filter="ended">Terminés</button>
+        </div>
+        <!-- Liste des sessions -->
+        <div id="chat-sessions-list" class="card" style="margin:12px 16px;"></div>
       </div>
 
-      <!-- Liste des sessions -->
-      <div id="chat-sessions-list" class="card" style="margin:12px 16px;"></div>
+      <!-- PANEL 2 : Conversation (caché par défaut) -->
+      <div id="chat-conv-panel" style="display:none;">
+        <div class="chat-subheader">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn btn--outline btn--sm" onclick="backToChatList()">← Retour</button>
+            <div class="chat-client-info">
+              <h4 id="chat-client-name">…</h4>
+              <p id="chat-client-meta"></p>
+            </div>
+          </div>
+          <button class="btn btn--danger btn--sm" id="btn-end-chat" onclick="endCurrentChat()">Clôturer</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="typing-indicator" id="chat-typing">
+            <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+            <span style="font-size:12px;color:var(--muted);margin-left:6px;">client écrit…</span>
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <textarea class="chat-msg-input" id="chat-input-msg" placeholder="Votre réponse…" rows="1"></textarea>
+          <button class="btn-send-msg" id="chat-send-btn" onclick="sendChatMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
 
     </div>
 

@@ -452,6 +452,12 @@ async function confirmDeleteRequest(id) {
    CHAT
    ════════════════════════════════════════════════════════════ */
 async function loadChatSessions() {
+  /* S'assurer qu'on est sur le panel liste */
+  const listP = $('chat-list-panel');
+  const convP = $('chat-conv-panel');
+  if (listP) listP.style.display = 'block';
+  if (convP) convP.style.display = 'none';
+
   const c = $('chat-sessions-list');
   if (!c) return;
   c.innerHTML = skeletonRows(4);
@@ -512,33 +518,31 @@ function updateChatBadge() {
 
 async function openChatSession(sessionId) {
   State.currentChat = null;
-  const mainContainer = $('view-chat');
 
-  mainContainer.innerHTML = `
-    <div class="chat-view-container">
-      <div class="chat-subheader">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <button class="btn btn--outline btn--sm" onclick="backToChatList()">← Retour</button>
-          <div class="chat-client-info"><h4 id="chat-client-name">Chargement…</h4><p id="chat-client-meta"></p></div>
-        </div>
-        <button class="btn btn--danger btn--sm" id="btn-end-chat" onclick="endCurrentChat()">Clôturer</button>
-      </div>
-      <div class="chat-messages" id="chat-messages">
-        <div class="typing-indicator" id="chat-typing"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div><span style="font-size:12px;color:var(--muted);margin-left:6px;">client écrit…</span></div>
-      </div>
-      <div class="chat-input-bar">
-        <textarea class="chat-msg-input" id="chat-input-msg" placeholder="Votre réponse…" rows="1"></textarea>
-        <button class="btn-send-msg" id="chat-send-btn" onclick="sendChatMessage()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
+  /* ── Basculer vers le panel conversation ── */
+  $('chat-list-panel').style.display  = 'none';
+  $('chat-conv-panel').style.display  = 'block';
+
+  /* Réinitialiser le contenu du panel */
+  $('chat-client-name').textContent = 'Chargement…';
+  $('chat-client-meta').textContent = '';
+  $('chat-messages').innerHTML = `
+    <div class="typing-indicator" id="chat-typing">
+      <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+      <span style="font-size:12px;color:var(--muted);margin-left:6px;">client écrit…</span>
     </div>`;
+  const inp = $('chat-input-msg');
+  const snd = $('chat-send-btn');
+  const end = $('btn-end-chat');
+  if (inp) inp.disabled = false;
+  if (snd) snd.disabled = false;
+  if (end) end.disabled = false;
 
   try {
     const session = await API.chat.session(sessionId);
     State.currentChat = session;
 
-    // Marquer unread à 0
+    /* Marquer unread à 0 */
     const s = State.chatSessions.find(s => s.sessionId === sessionId);
     if (s) s._unread = 0;
     updateChatBadge();
@@ -547,15 +551,15 @@ async function openChatSession(sessionId) {
     $('chat-client-meta').textContent = `${session.clientSubject || 'Support'} · ${fmtTime(session.startedAt)}`;
 
     if (session.status === 'ended') {
-      $('btn-end-chat').disabled = true;
-      $('chat-input-msg').disabled = true;
-      $('chat-send-btn').disabled = true;
+      if (inp) inp.disabled = true;
+      if (snd) snd.disabled = true;
+      if (end) end.disabled = true;
     }
 
     session.messages?.forEach(m => appendChatMessage(m));
     scrollChatBottom();
 
-    // Rejoindre via socket
+    /* Rejoindre via socket */
     if (State.socket) State.socket.emit('admin:join_chat', { sessionId });
 
   } catch (err) {
@@ -569,8 +573,12 @@ function backToChatList() {
     State.socket.emit('admin:leave_chat', { sessionId: State.currentChat.sessionId });
   }
   State.currentChat = null;
+
+  /* ── Revenir au panel liste ── */
+  $('chat-conv-panel').style.display = 'none';
+  $('chat-list-panel').style.display  = 'block';
+
   loadChatSessions();
-  navigate('chat');
 }
 
 function appendChatMessage(msg) {
